@@ -1,0 +1,11 @@
+name: House
+version: '${version}'
+
+main: com.usmcsky.House
+api-version: '1.21'
+
+authors: [ USMCsky ]
+commands:
+  build:
+    description: Builds a 5x5 two-story house five blocks in front of you.
+    usage: /build
