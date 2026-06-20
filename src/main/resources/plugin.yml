@@ -7,5 +7,5 @@ api-version: '1.21'
 authors: [ USMCsky ]
 commands:
   build:
-    description: Builds a 5x5 two-story house five blocks in front of you.
+    description: Builds a 7x7 two-story house five blocks in front of you.
     usage: /build
