@@ -1,6 +1,6 @@
 # House — Spigot Plugin for Minecraft 1.21.11
 
-A lightweight Spigot plugin for Minecraft that instantly builds a simple house with a single command. Run `/build` and the plugin generates a **5×5 two-story house** a few blocks in front of the player.
+A lightweight Spigot plugin for Minecraft that instantly builds a simple house with a single command. Run `/build` and the plugin generates a **7 X 7 two-story house** a few blocks in front of the player.
 
 ---
 
@@ -54,7 +54,7 @@ When a player runs `/build`, the plugin creates a predefined house structure sev
 
 | Command | Description |
 |---------|-------------|
-| `/build` | Builds a 5×5 two-story house five blocks in front of you |
+| `/build` | Builds a 7 X 7 two-story house five blocks in front of you |
 
 ---
 
