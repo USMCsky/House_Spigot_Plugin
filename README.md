@@ -1,10 +1,11 @@
 # House — Spigot Plugin for Minecraft 1.21.11
 
-A lightweight Spigot plugin for Minecraft that instantly builds a simple house with a single command. Run `/build` and the plugin generates a **7 X 7 two-story house** a few blocks in front of the player.
+A lightweight Spigot plugin for Minecraft that instantly builds a detailed house with a single command. Run `/build` and the plugin generates a **7 X 7 two-story house with a cross-gable roof** a few blocks in front of the player.
 
 ---
 ## Features
 - **Instant house generation** — use `/build` to create a ready-made structure in seconds.
+- **Decorative roof logic** — generates a mixed-material cross-gable roof with stairs, slabs, overhangs, dormers, trim, and a chimney.
 - **Simple gameplay utility** — great for quick shelter, testing, or fun server tools.
 - **No configuration required** — drop in the jar and start using it immediately.
 - **Lightweight plugin** — focused on one straightforward feature.
@@ -39,14 +40,14 @@ The compiled jar will be output to the `target/` directory.
 ---
 ## How It Works
 
-When a player runs `/build`, the plugin creates a predefined house structure several blocks in front of the player's current position. The command is designed to provide an instant small shelter without any setup or configuration.
+When a player runs `/build`, the plugin creates a predefined two-story structure several blocks in front of the player's current position. The house now uses layered stairs and slabs, overhanging eaves, intersecting gables, dormers, trim accents, and a chimney to make the generated roofline feel more handcrafted.
 
 ---
 ## Command
 
 | Command | Description |
 |---------|-------------|
-| `/build` | Builds a 7 X 7 two-story house five blocks in front of you |
+| `/build` | Builds a 7 X 7 two-story house with a decorative cross-gable roof five blocks in front of you |
 
 ---
 ## Plugin Info
