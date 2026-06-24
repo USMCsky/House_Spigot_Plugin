@@ -1,4 +1,8 @@
 # House — Spigot Plugin for Minecraft 1.21.11
+![Spigot](https://img.shields.io/badge/Spigot-Plugin-orange?style=for-the-badge)
+![Minecraft](https://img.shields.io/badge/Minecraft-Java%20Edition-3C8527?style=for-the-badge)
+![Java](https://img.shields.io/badge/Java-100%25-blue?style=for-the-badge&logo=openjdk&logoColor=white)
+![Status](https://img.shields.io/badge/Status-Active-success?style=for-the-badge)
 
 A lightweight Spigot plugin for Minecraft that instantly builds a detailed house with a single command. Run `/build` and the plugin generates a **7 X 7 two-story house with a cross-gable roof** a few blocks in front of the player.
 
