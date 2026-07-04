@@ -3,11 +3,9 @@ package com.usmcsky;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.Axis;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.Bisected;
-import org.bukkit.block.data.Orientable;
 import org.bukkit.block.data.type.Door;
 import org.bukkit.block.data.type.Slab;
 import org.bukkit.block.data.type.Stairs;
@@ -19,6 +17,19 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
 
+/**
+ * Builds a small two-story house relative to the player's facing.
+ *
+ * <p>This class uses a local house coordinate system instead of raw world coordinates:
+ * xOffset moves left/right across the house width,
+ * yOffset moves up/down,
+ * zOffset moves from the front wall toward the back wall.
+ *
+ * <p>The roof code is intentionally separated into small helpers because stair orientation is the
+ * part that is easiest to get wrong. When a roof stair is placed, it should face toward the ridge
+ * or toward the center of the feature it belongs to. If the stair faces outward instead, the roof
+ * looks inverted even though the blocks are in the correct positions.
+ */
 public final class House extends JavaPlugin {
 
     private static final int HOUSE_DISTANCE = 5;
@@ -37,7 +48,7 @@ public final class House extends JavaPlugin {
     private static final Material MAIN_ROOF_MATERIAL = Material.DARK_OAK_STAIRS;
     private static final Material MAIN_RIDGE_MATERIAL = Material.SPRUCE_SLAB;
     private static final Material SECONDARY_ROOF_MATERIAL = Material.SPRUCE_STAIRS;
-    private static final Material SECONDARY_RIDGE_MATERIAL = Material.DARK_OAK_SLAB;
+    private static final Material SECONDARY_RIDGE_MATERIAL = Material.SPRUCE_PLANKS;
     private static final Material GABLE_FILL_MATERIAL = Material.OAK_PLANKS;
     private static final Material GABLE_TRIM_MATERIAL = Material.STRIPPED_SPRUCE_LOG;
     private static final Material DORMER_FRAME_MATERIAL = Material.STRIPPED_OAK_LOG;
@@ -99,9 +110,10 @@ public final class House extends JavaPlugin {
     }
 
     private void buildRoof(Location origin, BlockFace right, BlockFace front, BlockFace depth) {
-        buildMainGableRoof(origin, right, depth);
+        // Build the large front-to-back roof first, then layer the cross-gable and small details on top.
+        buildMainGableRoof(origin, right, front, depth);
         buildMainGableEnds(origin, right, depth);
-        buildCrossGableRoof(origin, right, front, depth);
+        buildCrossGableRoof(origin, right, depth);
         buildCrossGableEnds(origin, right, depth);
         buildRoofTrim(origin, right, depth);
         buildDormer(origin, right, front, depth, 1);
@@ -110,56 +122,63 @@ public final class House extends JavaPlugin {
         buildEntryGableDetail(origin, right, front, depth);
     }
 
-    private void buildMainGableRoof(Location origin, BlockFace right, BlockFace depth) {
-        int extendedHalfWidth = getHalfWidth() + ROOF_OVERHANG;
-        int minZ = -ROOF_OVERHANG;
-        int maxZ = HOUSE_DEPTH - 1 + ROOF_OVERHANG;
+    private void buildMainGableRoof(Location origin, BlockFace right, BlockFace front, BlockFace depth) {
+        int centerDepth = HOUSE_DEPTH / 2;
+        int extendedHalfDepth = centerDepth + ROOF_OVERHANG;
+        int minX = -getHalfWidth() - ROOF_OVERHANG;
+        int maxX = getHalfWidth() + ROOF_OVERHANG;
 
-        for (int layer = 0; layer < extendedHalfWidth; layer++) {
-            int x = extendedHalfWidth - layer;
+        // Each layer moves one block inward and one block upward toward the center ridge at z = centerDepth.
+        // The stair facing must point toward that ridge so the roof slopes up correctly from front and back.
+        for (int layer = 0; layer < extendedHalfDepth; layer++) {
             int y = ROOF_Y + layer;
-            for (int z = minZ; z <= maxZ; z++) {
-                setBottomStair(origin, right, depth, -x, y, z, MAIN_ROOF_MATERIAL, right.getOppositeFace());
-                setBottomStair(origin, right, depth, x, y, z, MAIN_ROOF_MATERIAL, right);
+            int zFront = centerDepth - (extendedHalfDepth - layer);
+            int zBack = centerDepth + (extendedHalfDepth - layer);
+            for (int x = minX; x <= maxX; x++) {
+                setBottomStair(origin, right, depth, x, y, zFront, MAIN_ROOF_MATERIAL, depth);
+                setBottomStair(origin, right, depth, x, y, zBack, MAIN_ROOF_MATERIAL, front);
             }
         }
 
-        for (int z = minZ; z <= maxZ; z++) {
-            setTopSlab(origin, right, depth, 0, ROOF_Y + extendedHalfWidth, z, MAIN_RIDGE_MATERIAL);
+        for (int x = minX; x <= maxX; x++) {
+            setTopSlab(origin, right, depth, x, ROOF_Y + extendedHalfDepth, centerDepth, MAIN_RIDGE_MATERIAL);
         }
     }
 
     private void buildMainGableEnds(Location origin, BlockFace right, BlockFace depth) {
         int halfWidth = getHalfWidth();
-        for (int layer = 0; layer <= halfWidth; layer++) {
+        int centerDepth = HOUSE_DEPTH / 2;
+
+        for (int layer = 0; layer <= centerDepth; layer++) {
             int y = ROOF_Y + layer;
-            int span = halfWidth - layer;
-            for (int x = -span; x <= span; x++) {
-                Material material = Math.abs(x) == span && span > 0 ? GABLE_TRIM_MATERIAL : GABLE_FILL_MATERIAL;
-                setBlock(origin, right, depth, x, y, 0, material);
-                setBlock(origin, right, depth, x, y, HOUSE_DEPTH - 1, material);
+            int span = centerDepth - layer;
+            for (int z = centerDepth - span; z <= centerDepth + span; z++) {
+                Material material = (z == centerDepth - span || z == centerDepth + span) && span > 0
+                        ? GABLE_TRIM_MATERIAL
+                        : GABLE_FILL_MATERIAL;
+                setBlock(origin, right, depth, -halfWidth, y, z, material);
+                setBlock(origin, right, depth, halfWidth, y, z, material);
             }
         }
     }
 
-    private void buildCrossGableRoof(Location origin, BlockFace right, BlockFace front, BlockFace depth) {
-        int centerDepth = HOUSE_DEPTH / 2;
-        int extendedHalfDepth = centerDepth + ROOF_OVERHANG;
-        int halfWidth = getHalfWidth();
+    private void buildCrossGableRoof(Location origin, BlockFace right, BlockFace depth) {
+        int extendedHalfWidth = getHalfWidth() + ROOF_OVERHANG;
+        int minZ = -ROOF_OVERHANG;
+        int maxZ = HOUSE_DEPTH - 1 + ROOF_OVERHANG;
 
-        for (int layer = 0; layer < extendedHalfDepth; layer++) {
+        // This roof runs left-to-right, so both sides must face inward toward the center ridge at x = 0.
+        for (int layer = 0; layer < extendedHalfWidth; layer++) {
+            int x = extendedHalfWidth - layer;
             int y = ROOF_Y + 1 + layer;
-            int zFront = centerDepth - (extendedHalfDepth - layer);
-            int zBack = centerDepth + (extendedHalfDepth - layer);
-
-            for (int x = -halfWidth; x <= halfWidth; x++) {
-                setBottomStair(origin, right, depth, x, y, zFront, SECONDARY_ROOF_MATERIAL, front);
-                setBottomStair(origin, right, depth, x, y, zBack, SECONDARY_ROOF_MATERIAL, depth);
+            for (int z = minZ; z <= maxZ; z++) {
+                setBottomStair(origin, right, depth, -x, y, z, SECONDARY_ROOF_MATERIAL, right);
+                setBottomStair(origin, right, depth, x, y, z, SECONDARY_ROOF_MATERIAL, right.getOppositeFace());
             }
         }
 
-        for (int x = -halfWidth; x <= halfWidth; x++) {
-            setTopSlab(origin, right, depth, x, ROOF_Y + 1 + extendedHalfDepth, centerDepth, SECONDARY_RIDGE_MATERIAL);
+        for (int z = minZ; z <= maxZ; z++) {
+            setBlock(origin, right, depth, 0, ROOF_Y + 1 + extendedHalfWidth, z, SECONDARY_RIDGE_MATERIAL);
         }
     }
 
@@ -183,17 +202,13 @@ public final class House extends JavaPlugin {
 
     private void buildCrossGableEnds(Location origin, BlockFace right, BlockFace depth) {
         int halfWidth = getHalfWidth();
-        int centerDepth = HOUSE_DEPTH / 2;
-
-        for (int layer = 0; layer <= centerDepth; layer++) {
+        for (int layer = 0; layer <= halfWidth; layer++) {
             int y = ROOF_Y + 1 + layer;
-            int span = centerDepth - layer;
-            for (int z = centerDepth - span; z <= centerDepth + span; z++) {
-                Material material = (z == centerDepth - span || z == centerDepth + span) && span > 0
-                        ? GABLE_TRIM_MATERIAL
-                        : GABLE_FILL_MATERIAL;
-                setBlock(origin, right, depth, -halfWidth, y, z, material);
-                setBlock(origin, right, depth, halfWidth, y, z, material);
+            int span = halfWidth - layer;
+            for (int x = -span; x <= span; x++) {
+                Material material = Math.abs(x) == span && span > 0 ? GABLE_TRIM_MATERIAL : GABLE_FILL_MATERIAL;
+                setBlock(origin, right, depth, x, y, 0, material);
+                setBlock(origin, right, depth, x, y, HOUSE_DEPTH - 1, material);
             }
         }
     }
@@ -203,6 +218,8 @@ public final class House extends JavaPlugin {
         int minZ = -ROOF_OVERHANG;
         int maxZ = HOUSE_DEPTH - 1 + ROOF_OVERHANG;
 
+        // Keep the trim low and simple. The old vertical peak markers made the silhouette look spiky
+        // and exaggerated the mixed-material contrast.
         for (int z = minZ; z <= maxZ; z++) {
             setTopSlab(origin, right, depth, -extendedHalfWidth, ROOF_Y - 1, z, MAIN_RIDGE_MATERIAL);
             setTopSlab(origin, right, depth, extendedHalfWidth, ROOF_Y - 1, z, MAIN_RIDGE_MATERIAL);
@@ -212,11 +229,6 @@ public final class House extends JavaPlugin {
             setTopSlab(origin, right, depth, x, ROOF_Y - 1, minZ, MAIN_RIDGE_MATERIAL);
             setTopSlab(origin, right, depth, x, ROOF_Y - 1, maxZ, MAIN_RIDGE_MATERIAL);
         }
-
-        setVerticalTrimLog(origin, right, depth, 0, ROOF_Y + getHalfWidth() + 2, minZ);
-        setVerticalTrimLog(origin, right, depth, 0, ROOF_Y + getHalfWidth() + 2, maxZ);
-        setVerticalTrimLog(origin, right, depth, -getHalfWidth(), ROOF_Y + getHalfWidth() + 3, HOUSE_DEPTH / 2);
-        setVerticalTrimLog(origin, right, depth, getHalfWidth(), ROOF_Y + getHalfWidth() + 3, HOUSE_DEPTH / 2);
     }
 
     private void buildDormer(Location origin, BlockFace right, BlockFace front, BlockFace depth, int zOffset) {
@@ -225,11 +237,13 @@ public final class House extends JavaPlugin {
         setBlock(origin, right, depth, -1, windowBaseY, zOffset, DORMER_FRAME_MATERIAL);
         setBlock(origin, right, depth, 0, windowBaseY, zOffset, Material.GLASS_PANE);
         setBlock(origin, right, depth, 1, windowBaseY, zOffset, DORMER_FRAME_MATERIAL);
-        setBottomStair(origin, right, depth, -1, windowBaseY + 1, zOffset, SECONDARY_ROOF_MATERIAL, right.getOppositeFace());
-        setBottomStair(origin, right, depth, 1, windowBaseY + 1, zOffset, SECONDARY_ROOF_MATERIAL, right);
-        setTopSlab(origin, right, depth, 0, windowBaseY + 2, zOffset, SECONDARY_RIDGE_MATERIAL);
+        // The dormer mini-gable follows the same rule as the main roof: both sides face the dormer ridge.
+        setBottomStair(origin, right, depth, -1, windowBaseY + 1, zOffset, SECONDARY_ROOF_MATERIAL, right);
+        setBottomStair(origin, right, depth, 1, windowBaseY + 1, zOffset, SECONDARY_ROOF_MATERIAL, right.getOppositeFace());
+        setBlock(origin, right, depth, 0, windowBaseY + 2, zOffset, SECONDARY_RIDGE_MATERIAL);
 
-        BlockFace awningFace = zOffset < HOUSE_DEPTH / 2 ? front : depth;
+        // The awning sits one block out from the dormer face, so it must face back toward the window.
+        BlockFace awningFace = zOffset < HOUSE_DEPTH / 2 ? depth : front;
         int awningZ = zOffset < HOUSE_DEPTH / 2 ? zOffset - 1 : zOffset + 1;
         setBottomStair(origin, right, depth, 0, windowBaseY + 1, awningZ, SECONDARY_ROOF_MATERIAL, awningFace);
     }
@@ -247,10 +261,11 @@ public final class House extends JavaPlugin {
         setBlock(origin, right, depth, -1, 3, 0, GABLE_TRIM_MATERIAL);
         setBlock(origin, right, depth, 1, 3, 0, GABLE_TRIM_MATERIAL);
         setBlock(origin, right, depth, 0, 4, 0, GABLE_TRIM_MATERIAL);
-        setBottomStair(origin, right, depth, -1, 5, -1, SECONDARY_ROOF_MATERIAL, right.getOppositeFace());
-        setBottomStair(origin, right, depth, 1, 5, -1, SECONDARY_ROOF_MATERIAL, right);
-        setBottomStair(origin, right, depth, 0, 5, -2, SECONDARY_ROOF_MATERIAL, front);
-        setTopSlab(origin, right, depth, 0, 6, -1, SECONDARY_RIDGE_MATERIAL);
+        // This small front gable is another roof feature, so every stair should face inward to the peak.
+        setBottomStair(origin, right, depth, -1, 5, -1, SECONDARY_ROOF_MATERIAL, right);
+        setBottomStair(origin, right, depth, 1, 5, -1, SECONDARY_ROOF_MATERIAL, right.getOppositeFace());
+        setBottomStair(origin, right, depth, 0, 5, -2, SECONDARY_ROOF_MATERIAL, depth);
+        setBlock(origin, right, depth, 0, 6, -1, SECONDARY_RIDGE_MATERIAL);
     }
 
     private void placeWindows(Location origin, BlockFace right, BlockFace depth) {
@@ -294,6 +309,8 @@ public final class House extends JavaPlugin {
         Block block = getBlock(origin, right, depth, xOffset, yOffset, zOffset);
         block.setType(material, false);
         Stairs stairs = (Stairs) block.getBlockData();
+        // Passing the facing explicitly keeps every roof caller honest. If a roof looks inverted,
+        // the first thing to check is whether the stair is facing away from the ridge instead of toward it.
         stairs.setFacing(facing);
         stairs.setHalf(Bisected.Half.BOTTOM);
         block.setBlockData(stairs, false);
@@ -306,15 +323,6 @@ public final class House extends JavaPlugin {
         Slab slab = (Slab) block.getBlockData();
         slab.setType(Slab.Type.TOP);
         block.setBlockData(slab, false);
-    }
-
-    private void setVerticalTrimLog(Location origin, BlockFace right, BlockFace depth,
-                                    int xOffset, int yOffset, int zOffset) {
-        Block block = getBlock(origin, right, depth, xOffset, yOffset, zOffset);
-        block.setType(GABLE_TRIM_MATERIAL, false);
-        Orientable log = (Orientable) block.getBlockData();
-        log.setAxis(Axis.Y);
-        block.setBlockData(log, false);
     }
 
     private Block getBlock(Location origin, BlockFace right, BlockFace depth, int xOffset, int yOffset, int zOffset) {
