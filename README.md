@@ -9,10 +9,9 @@ A lightweight Spigot plugin for Minecraft that instantly builds a detailed house
 ---
 ## Features
 - **Instant house generation** — use `/build` to create a ready-made structure in seconds.
-- **Decorative roof logic** — generates a mixed-material cross-gable roof with stairs, slabs, overhangs, dormers, trim, and a chimney.
+- **Decorative roof logic** — generates a mixed-material cross-gable roof with stairs, slabs, overhangs, dormers, trim, and a chimney. Still needs some rework, but mostly there.
 - **Simple gameplay utility** — great for quick shelter, testing, or fun server tools.
 - **No configuration required** — drop in the jar and start using it immediately.
-- **Lightweight plugin** — focused on one straightforward feature.
 
 ---
 ## Requirements
@@ -21,7 +20,6 @@ A lightweight Spigot plugin for Minecraft that instantly builds a detailed house
 - **API:** Spigot API `1.21.11`
 
 ---
-
 ## Installation
 1. Build the plugin from source (see [Building](#building)) or download the latest release jar.
 2. Place the `.jar` file into your server's `plugins/` folder.
@@ -29,37 +27,11 @@ A lightweight Spigot plugin for Minecraft that instantly builds a detailed house
 4. Use `/build` in-game to generate a house.
 
 ---
-
-## Building
-This project uses Maven. To build from source:
-
-```bash
-git clone https://github.com/USMCsky/House_Spigot_Plugin.git
-cd House_Spigot_Plugin
-mvn clean package
-```
-
-The compiled jar will be output to the `target/` directory.
-
----
 ## How It Works
-
 When a player runs `/build`, the plugin creates a predefined two-story structure several blocks in front of the player's current position. The house now uses layered stairs and slabs, overhanging eaves, intersecting gables, dormers, trim accents, and a chimney to make the generated roofline feel more handcrafted.
 
 ---
 ## Command
-
 | Command | Description |
 |---------|-------------|
-| `/build` | Builds a 7 X 7 two-story house with a decorative cross-gable roof five blocks in front of you |
-
----
-## Plugin Info
-
-| Field   | Value |
-|---------|-------|
-| Name    | House |
-| Version | 1.21.11 |
-| Author  | USMCsky |
-| Main    | `com.usmcsky.House` |
-| API     | 1.21 |
+| `/build` | Builds a 7 X 7 two-story house with a decorative cross-gable roof five blocks in front of you.
