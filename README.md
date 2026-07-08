@@ -13,6 +13,8 @@ A lightweight Spigot plugin for Minecraft that instantly builds a detailed house
 - **Simple gameplay utility** — great for quick shelter, testing, or fun server tools.
 - **No configuration required** — drop in the jar and start using it immediately.
 
+## It will clear blocks 4 to 5 blocks around the build.
+
 ---
 ## Requirements
 - **Minecraft / Spigot:** 1.21.1
